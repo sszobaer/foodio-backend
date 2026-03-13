@@ -29,7 +29,7 @@ export class MenuItemsService {
   async create(
     createMenuItemDto: CreateMenuItemDto,
     image?: Express.Multer.File,
-  ): Promise<MenuItem> {
+  ): Promise<{ id: string; message: string }> {
     const category = await this.categoriesRepository.findOne({
       where: {
         id: createMenuItemDto.categoryId,
@@ -70,7 +70,12 @@ export class MenuItemsService {
       isActive: createMenuItemDto.isActive ?? true,
     });
 
-    return this.menuItemsRepository.save(menuItem);
+    const savedMenuItem = await this.menuItemsRepository.save(menuItem);
+
+    return {
+      id: savedMenuItem.id,
+      message: 'Menu item created successfully',
+    };
   }
 
   async findAll(queryDto: QueryMenuItemDto): Promise<MenuItem[]> {
@@ -151,7 +156,7 @@ export class MenuItemsService {
     id: string,
     updateMenuItemDto: UpdateMenuItemDto,
     image?: Express.Multer.File,
-  ): Promise<MenuItem> {
+  ): Promise<{ id: string; message: string }> {
     const menuItem = await this.findOne(id);
 
     if (updateMenuItemDto.categoryId) {
@@ -204,26 +209,37 @@ export class MenuItemsService {
       menuItem.imageUrl = await this.cloudinaryService.uploadImage(image);
     }
 
-    return this.menuItemsRepository.save(menuItem);
+    await this.menuItemsRepository.save(menuItem);
+
+    return {
+      id: menuItem.id,
+      message: 'Menu item updated successfully',
+    };
   }
 
   async updateAvailability(
     id: string,
     updateMenuItemAvailabilityDto: UpdateMenuItemAvailabilityDto,
-  ): Promise<MenuItem> {
+  ): Promise<{ id: string; message: string }> {
     const menuItem = await this.findOne(id);
 
     menuItem.isAvailable = updateMenuItemAvailabilityDto.isAvailable;
 
-    return this.menuItemsRepository.save(menuItem);
+    await this.menuItemsRepository.save(menuItem);
+
+    return {
+      id: menuItem.id,
+      message: 'Menu item availability updated successfully',
+    };
   }
 
-  async remove(id: string): Promise<{ message: string }> {
+  async remove(id: string): Promise<{ id: string; message: string }> {
     const menuItem = await this.findOne(id);
 
     await this.menuItemsRepository.remove(menuItem);
 
     return {
+      id,
       message: 'Menu item deleted successfully',
     };
   }

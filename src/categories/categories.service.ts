@@ -17,7 +17,9 @@ export class CategoriesService {
     private readonly categoriesRepository: Repository<Category>,
   ) {}
 
-  async create(createCategoryDto: CreateCategoryDto): Promise<Category> {
+  async create(
+    createCategoryDto: CreateCategoryDto,
+  ): Promise<{ id: string; message: string }> {
     const normalizedName = createCategoryDto.name.trim();
     const slug = await this.generateUniqueSlug(normalizedName);
 
@@ -35,7 +37,12 @@ export class CategoriesService {
       isActive: createCategoryDto.isActive ?? true,
     });
 
-    return this.categoriesRepository.save(category);
+    const savedCategory = await this.categoriesRepository.save(category);
+
+    return {
+      id: savedCategory.id,
+      message: 'Category created successfully',
+    };
   }
 
   async findAll(): Promise<Category[]> {
@@ -66,7 +73,7 @@ export class CategoriesService {
   async update(
     id: string,
     updateCategoryDto: UpdateCategoryDto,
-  ): Promise<Category> {
+  ): Promise<{ id: string; message: string }> {
     const category = await this.findOne(id);
 
     if (updateCategoryDto.name) {
@@ -88,15 +95,21 @@ export class CategoriesService {
       category.isActive = updateCategoryDto.isActive;
     }
 
-    return this.categoriesRepository.save(category);
+    await this.categoriesRepository.save(category);
+
+    return {
+      id: category.id,
+      message: 'Category updated successfully',
+    };
   }
 
-  async remove(id: string): Promise<{ message: string }> {
+  async remove(id: string): Promise<{ id: string; message: string }> {
     const category = await this.findOne(id);
 
     await this.categoriesRepository.remove(category);
 
     return {
+      id,
       message: 'Category deleted successfully',
     };
   }
