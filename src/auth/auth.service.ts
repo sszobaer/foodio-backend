@@ -25,7 +25,7 @@ export class AuthService {
       passwordHash,
     });
 
-    return this.buildAuthResponse(user);
+    return this.buildAuthResponse(user, "Registration Successful");
   }
 
   async login(loginDto: LoginDto) {
@@ -44,35 +44,29 @@ export class AuthService {
       throw new UnauthorizedException('Invalid credentials');
     }
 
-    return this.buildAuthResponse(user);
+    return this.buildAuthResponse(user, "Login Successful");
   }
 
   async getMe(userId: string) {
-    return this.usersService.findById(userId);
-  }
+  const user = await this.usersService.findById(userId);
 
-  private async buildAuthResponse(user: User) {
-    const payload: JwtPayload = {
-      sub: user.id,
-      email: user.email,
-      role: user.role,
-    };
+  const { passwordHash, ...safeUser } = user;
 
-    const accessToken = await this.jwtService.signAsync(payload);
+  return safeUser;
+}
 
-    return {
-      message: 'Authentication successful',
-      accessToken,
-      user: {
-        id: user.id,
-        fullName: user.fullName,
-        email: user.email,
-        address: user.address,
-        role: user.role,
-        isActive: user.isActive,
-        createdAt: user.createdAt,
-        updatedAt: user.updatedAt,
-      },
-    };
-  }
+  private async buildAuthResponse(user: User, message: string) {
+  const payload: JwtPayload = {
+    sub: user.id,
+    email: user.email,
+    role: user.role,
+  };
+
+  const accessToken = await this.jwtService.signAsync(payload);
+
+  return {
+    message,
+    accessToken,
+  };
+}
 }
