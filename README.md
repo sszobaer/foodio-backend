@@ -1,9 +1,9 @@
-# 🍽️ Foodio Backend API
+# 🍽️ Foodio - Restaurant Ordering System Backend API
 
 Foodio is a **restaurant ordering backend system** built with **NestJS, PostgreSQL, and TypeORM**.
 It powers menu browsing, ordering, and an admin panel to manage menu items and orders.
 
-This backend is designed with **clean architecture, validation, authentication, and role-based access control**, making it suitable for production environments or as a strong backend portfolio project.
+This backend is designed with **clean architecture, validation, authentication, and role-based access control**, making it suitable for production environments or as a strong backend project.
 
 ---
 
@@ -162,7 +162,7 @@ DATABASE_URL=postgresql://...
 ### 1️⃣ Clone the repository
 
 ```bash
-git clone <your-repository-url>
+git clone https://github.com/sszobaer/foodio-backend.git
 cd foodio-backend
 ```
 
