@@ -13,17 +13,19 @@ import { RegisterDto } from './dto/register.dto';
 import { LoginDto } from './dto/login.dto';
 import { JwtAuthGuard } from '../common/guards/jwt-auth.guard';
 import { CurrentUser } from '../common/decorators/current-user.decorator';
-import { User } from '../users/entities/user.entity';
+import type { User } from '../users/entities/user.entity';
 
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   private getCookieOptions() {
+    const isProduction = process.env.NODE_ENV === 'production';
+
     return {
       httpOnly: true,
-      secure: false, // true in production with HTTPS
-      sameSite: 'lax' as const,
+      secure: true,
+      sameSite: 'none' as const,
       maxAge: 1000 * 60 * 60 * 24 * 7,
       path: '/',
     };
@@ -67,8 +69,8 @@ export class AuthController {
   logout(@Res({ passthrough: true }) res: Response) {
     res.clearCookie('accessToken', {
       httpOnly: true,
-      secure: false,
-      sameSite: 'lax',
+      secure: true,
+      sameSite: 'none',
       path: '/',
     });
 
