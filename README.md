@@ -274,7 +274,7 @@ npm run start:prod
 Server runs at:
 
 ```
-http://localhost:3000
+http://localhost:5000
 ```
 
 ---
@@ -447,6 +447,32 @@ Example:
 ```
 
 ---
+
+## Authentication (HttpOnly cookie)
+
+Authentication uses an HttpOnly cookie named `accessToken`. The server sets this cookie on `POST /auth/login` and `POST /auth/register`, and clears it on `POST /auth/logout`. The cookie is configured as `httpOnly: true`, `sameSite: 'lax'`, and `secure` should be enabled in production (HTTPS).
+
+CORS is enabled with `credentials: true`, so clients must send credentials with requests. Examples:
+
+Fetch example:
+```
+fetch('http://localhost:5000/auth/login', {
+	method: 'POST',
+	credentials: 'include',
+	headers: { 'Content-Type': 'application/json' },
+	body: JSON.stringify({ email, password }),
+});
+```
+
+Axios example:
+```
+axios.post('http://localhost:5000/auth/login', { email, password }, { withCredentials: true });
+```
+
+Postman: use the **Cookies** tab to view/send the `accessToken` cookie, or enable cookie retention so requests include cookies.
+
+Note: Because the cookie is HttpOnly, it is not accessible from JavaScript. Use the `GET /auth/me` endpoint to fetch the authenticated user's data.
+
 
 # File Upload Handling
 
