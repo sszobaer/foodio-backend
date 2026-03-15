@@ -140,12 +140,19 @@ export class OrdersService {
     return order;
   }
 
-  async findAll(): Promise<Order[]> {
-    return this.ordersRepository.find({
-      relations: ['items', 'user'],
-      order: { createdAt: 'DESC' },
-    });
-  }
+  async findAll() {
+  return this.ordersRepository
+    .createQueryBuilder('order')
+    .select([
+      'order.id',
+      'order.createdAt',
+      'order.customerName',
+      'order.total',
+      'order.status',
+    ])
+    .orderBy('order.createdAt', 'DESC')
+    .getMany();
+}
 
   async findOne(id: string): Promise<Order> {
     const order = await this.ordersRepository.findOne({
