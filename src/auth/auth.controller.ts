@@ -1,12 +1,4 @@
-import {
-  Body,
-  Controller,
-  Get,
-  Post,
-  UseGuards,
-  Res,
-} from '@nestjs/common';
-import type { Response } from 'express';
+import { Body, Controller, Get, Post, UseGuards } from '@nestjs/common';
 
 import { AuthService } from './auth.service';
 import { RegisterDto } from './dto/register.dto';
@@ -19,26 +11,9 @@ import type { User } from '../users/entities/user.entity';
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  private getCookieOptions() {
-    const isProduction = process.env.NODE_ENV === 'production';
-
-    return {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? ('none' as const) : ('lax' as const),
-      maxAge: 1000 * 60 * 60 * 24 * 7,
-      path: '/',
-    };
-  }
-
   @Post('register')
-  async register(
-    @Body() registerDto: RegisterDto,
-    @Res({ passthrough: true }) res: Response,
-  ) {
+  async register(@Body() registerDto: RegisterDto) {
     const result = await this.authService.register(registerDto);
-
-    res.cookie('accessToken', result.accessToken, this.getCookieOptions());
 
     return {
       message: result.message,
@@ -47,13 +22,8 @@ export class AuthController {
   }
 
   @Post('login')
-  async login(
-    @Body() loginDto: LoginDto,
-    @Res({ passthrough: true }) res: Response,
-  ) {
+  async login(@Body() loginDto: LoginDto) {
     const result = await this.authService.login(loginDto);
-
-    res.cookie('accessToken', result.accessToken, this.getCookieOptions());
 
     return {
       message: result.message,
@@ -68,16 +38,7 @@ export class AuthController {
   }
 
   @Post('logout')
-  logout(@Res({ passthrough: true }) res: Response) {
-    const isProduction = process.env.NODE_ENV === 'production';
-
-    res.clearCookie('accessToken', {
-      httpOnly: true,
-      secure: isProduction,
-      sameSite: isProduction ? 'none' : 'lax',
-      path: '/',
-    });
-
+  logout() {
     return {
       message: 'Logout successful',
     };

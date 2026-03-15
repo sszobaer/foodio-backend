@@ -6,10 +6,6 @@ import { ExtractJwt, Strategy } from 'passport-jwt';
 import { JwtPayload } from '../../common/interfaces/jwt-payload.interface';
 import { UsersService } from '../../users/users.service';
 
-type RequestWithCookies = Request & {
-  cookies?: Record<string, string>;
-};
-
 @Injectable()
 export class JwtStrategy extends PassportStrategy(Strategy) {
   constructor(
@@ -23,10 +19,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     }
 
     super({
-      jwtFromRequest: ExtractJwt.fromExtractors([
-        ExtractJwt.fromAuthHeaderAsBearerToken(),
-        (req: RequestWithCookies) => req?.cookies?.accessToken ?? null,
-      ]),
+      jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
       secretOrKey: secret,
     });
