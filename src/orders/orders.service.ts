@@ -154,18 +154,28 @@ export class OrdersService {
     .getMany();
 }
 
-  async findOne(id: string): Promise<Order> {
-    const order = await this.ordersRepository.findOne({
-      where: { id },
-      relations: ['items', 'user'],
-    });
+  async findOne(id: string) {
+  const order = await this.ordersRepository.findOne({
+    where: { id },
+    relations: ['items'],
+    select: {
+      id: true,
+      deliveryAddress: true,
+      total: true,
+      items: {
+        itemName: true,
+        quantity: true,
+        lineTotal: true,
+      },
+    },
+  });
 
-    if (!order) {
-      throw new NotFoundException('Order not found');
-    }
-
-    return order;
+  if (!order) {
+    throw new NotFoundException('Order not found');
   }
+
+  return order;
+}
 
   async updateStatus(
   id: string,
