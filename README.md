@@ -448,30 +448,28 @@ Example:
 
 ---
 
-## Authentication (HttpOnly cookie)
+## Authentication
 
-Authentication uses an HttpOnly cookie named `accessToken`. The server sets this cookie on `POST /auth/login` and `POST /auth/register`, and clears it on `POST /auth/logout`. The cookie is configured as `httpOnly: true`, `sameSite: 'lax'`, and `secure` should be enabled in production (HTTPS).
+Authentication supports both cookies and bearer tokens. The server sets a cookie named `accessToken` on `POST /auth/login` and `POST /auth/register`, and clears it on `POST /auth/logout`. Browser clients can rely on cookies (send requests with `credentials: 'include'`), while non-browser clients (mobile apps, API clients) can use the `Authorization: Bearer <token>` header.
 
-CORS is enabled with `credentials: true`, so clients must send credentials with requests. Examples:
-
-Fetch example:
+Fetch example (browser):
 ```
 fetch('http://localhost:5000/auth/login', {
-	method: 'POST',
-	credentials: 'include',
-	headers: { 'Content-Type': 'application/json' },
-	body: JSON.stringify({ email, password }),
+  method: 'POST',
+  credentials: 'include',
+  headers: { 'Content-Type': 'application/json' },
+  body: JSON.stringify({ email, password }),
 });
 ```
 
-Axios example:
+Axios example (browser):
 ```
 axios.post('http://localhost:5000/auth/login', { email, password }, { withCredentials: true });
 ```
 
-Postman: use the **Cookies** tab to view/send the `accessToken` cookie, or enable cookie retention so requests include cookies.
+Postman: either use the **Cookies** tab to view/send the `accessToken` cookie or add an `Authorization: Bearer <token>` header to requests.
 
-Note: Because the cookie is HttpOnly, it is not accessible from JavaScript. Use the `GET /auth/me` endpoint to fetch the authenticated user's data.
+Use `GET /auth/me` to fetch the authenticated user's data.
 
 
 # File Upload Handling
