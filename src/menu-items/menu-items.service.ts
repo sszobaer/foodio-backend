@@ -84,19 +84,20 @@ export class MenuItemsService {
   }
 
   async findAll(queryDto: QueryMenuItemDto): Promise<MenuItem[]> {
-    const queryBuilder = this.menuItemsRepository
-      .createQueryBuilder('menuItem')
-      .leftJoinAndSelect('menuItem.category', 'category')
-      .where('menuItem.isActive = :isActive', { isActive: true })
-      .andWhere('category.isActive = :categoryIsActive', {
-        categoryIsActive: true,
-      });
+  const queryBuilder = this.menuItemsRepository
+    .createQueryBuilder('menuItem')
+    .leftJoinAndSelect('menuItem.category', 'category')
+    .where('menuItem.isActive = :isActive', { isActive: true })
+    .andWhere('menuItem.isAvailable = :isAvailable', { isAvailable: true })
+    .andWhere('category.isActive = :categoryIsActive', {
+      categoryIsActive: true,
+    });
 
-    this.applyPublicFilters(queryBuilder, queryDto);
-    this.applySorting(queryBuilder, queryDto.sortBy);
+  this.applyPublicFilters(queryBuilder, queryDto);
+  this.applySorting(queryBuilder, queryDto.sortBy);
 
-    return queryBuilder.getMany();
-  }
+  return queryBuilder.getMany();
+}
 
   async findAllForAdmin(queryDto: QueryMenuItemDto): Promise<MenuItem[]> {
     const queryBuilder = this.menuItemsRepository
