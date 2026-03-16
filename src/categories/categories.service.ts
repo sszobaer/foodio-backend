@@ -45,18 +45,20 @@ export class CategoriesService {
     };
   }
 
-  async findAll(): Promise<Category[]> {
-    return this.categoriesRepository.find({
-      where: { isActive: true },
-      order: { createdAt: 'DESC' },
-    });
-  }
+  async findAll(): Promise<{ name: string; slug: string }[]> {
+  return this.categoriesRepository.find({
+    select: ['name', 'slug', 'id'],
+    where: { isActive: true },
+    order: { createdAt: 'DESC' },
+  });
+}
 
-  async findAllForAdmin(): Promise<Category[]> {
-    return this.categoriesRepository.find({
-      order: { createdAt: 'DESC' },
-    });
-  }
+  async findAllForAdmin(): Promise<{ name: string }[]> {
+  return this.categoriesRepository.find({
+    select: ['name', 'id'], 
+    order: { createdAt: 'DESC' },
+  });
+}
 
   async findOne(id: string): Promise<Category> {
     const category = await this.categoriesRepository.findOne({
