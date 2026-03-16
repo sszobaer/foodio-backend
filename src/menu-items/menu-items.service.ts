@@ -24,7 +24,7 @@ export class MenuItemsService {
     private readonly categoriesRepository: Repository<Category>,
 
     private readonly cloudinaryService: CloudinaryService,
-  ) {}
+  ) { }
 
   async create(
     createMenuItemDto: CreateMenuItemDto,
@@ -172,6 +172,7 @@ export class MenuItemsService {
       }
 
       menuItem.categoryId = updateMenuItemDto.categoryId;
+      menuItem.category = category;
     }
 
     if (updateMenuItemDto.name) {
@@ -208,11 +209,16 @@ export class MenuItemsService {
     if (image) {
       menuItem.imageUrl = await this.cloudinaryService.uploadImage(image);
     }
-
+    
     await this.menuItemsRepository.save(menuItem);
 
+    const updatedMenuItem = await this.menuItemsRepository.findOne({
+      where: { id: menuItem.id },
+      relations: ['category'],
+    });
+
     return {
-      id: menuItem.id,
+      id: updatedMenuItem!.id,
       message: 'Menu item updated successfully',
     };
   }
