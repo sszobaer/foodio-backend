@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -9,12 +10,16 @@ import { Repository } from 'typeorm';
 import { Category } from './entities/category.entity';
 import { CreateCategoryDto } from './dto/create-category.dto';
 import { UpdateCategoryDto } from './dto/update-category.dto';
+import { MenuItem } from 'src/menu-items/entities/menu-item.entity';
 
 @Injectable()
 export class CategoriesService {
   constructor(
     @InjectRepository(Category)
     private readonly categoriesRepository: Repository<Category>,
+
+    @InjectRepository(MenuItem)
+    private readonly menuItemsRepository: Repository<MenuItem>,
   ) {}
 
   async create(
@@ -45,20 +50,20 @@ export class CategoriesService {
     };
   }
 
-  async findAll(): Promise<{ name: string; slug: string }[]> {
-  return this.categoriesRepository.find({
-    select: ['name', 'slug', 'id'],
-    where: { isActive: true },
-    order: { createdAt: 'DESC' },
-  });
-}
+  async findAll(): Promise<{ id: string; name: string; slug: string }[]> {
+    return this.categoriesRepository.find({
+      select: ['id', 'name', 'slug'],
+      where: { isActive: true },
+      order: { createdAt: 'DESC' },
+    });
+  }
 
-  async findAllForAdmin(): Promise<{ name: string }[]> {
-  return this.categoriesRepository.find({
-    select: ['name', 'id'], 
-    order: { createdAt: 'DESC' },
-  });
-}
+  async findAllForAdmin(): Promise<{ id: string; name: string }[]> {
+    return this.categoriesRepository.find({
+      select: ['id', 'name'],
+      order: { createdAt: 'DESC' },
+    });
+  }
 
   async findOne(id: string): Promise<Category> {
     const category = await this.categoriesRepository.findOne({
@@ -106,9 +111,19 @@ export class CategoriesService {
   }
 
   async remove(id: string): Promise<{ id: string; message: string }> {
-    const category = await this.findOne(id);
+    await this.findOne(id);
 
-    await this.categoriesRepository.remove(category);
+    const menuItemCount = await this.menuItemsRepository.count({
+      where: { categoryId: id },
+    });
+
+    if (menuItemCount > 0) {
+      throw new BadRequestException(
+        'Cannot delete category because it is assigned to existing menu items.',
+      );
+    }
+
+    await this.categoriesRepository.delete(id);
 
     return {
       id,
