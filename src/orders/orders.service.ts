@@ -28,92 +28,93 @@ export class OrdersService {
     private readonly dataSource: DataSource,
   ) {}
 
-  async create(createOrderDto: CreateOrderDto, user: User): Promise<{ id: string; message: string }> {
+  async create(
+    createOrderDto: CreateOrderDto,
+    user: User,
+  ): Promise<{ id: string; message: string }> {
+    const uniqueMenuItemIds = [
+      ...new Set(createOrderDto.items.map((item) => item.menuItemId)),
+    ];
 
-  const uniqueMenuItemIds = [
-    ...new Set(createOrderDto.items.map((item) => item.menuItemId)),
-  ];
+    const menuItems = await this.menuItemsRepository.find({
+      where: {
+        id: In(uniqueMenuItemIds),
+        isActive: true,
+        isAvailable: true,
+      },
+    });
 
-  const menuItems = await this.menuItemsRepository.find({
-    where: {
-      id: In(uniqueMenuItemIds),
-      isActive: true,
-      isAvailable: true,
-    },
-  });
-
-  if (menuItems.length !== uniqueMenuItemIds.length) {
-    throw new NotFoundException(
-      'One or more menu items were not found or unavailable',
-    );
-  }
-
-  const menuItemMap = new Map(menuItems.map((item) => [item.id, item]));
-
-  let subtotal = 0;
-
-  const preparedItems = createOrderDto.items.map((item) => {
-    const menuItem = menuItemMap.get(item.menuItemId);
-
-    if (!menuItem) {
+    if (menuItems.length !== uniqueMenuItemIds.length) {
       throw new NotFoundException(
-        `Menu item with ID ${item.menuItemId} not found`,
+        'One or more menu items were not found or unavailable',
       );
     }
 
-    const itemPrice = Number(menuItem.price);
-    const lineTotal = itemPrice * item.quantity;
+    const menuItemMap = new Map(menuItems.map((item) => [item.id, item]));
 
-    subtotal += lineTotal;
+    let subtotal = 0;
 
-    return {
-      menuItemId: menuItem.id,
-      itemName: menuItem.name,
-      itemPrice: itemPrice.toFixed(2),
-      quantity: item.quantity,
-      lineTotal: lineTotal.toFixed(2),
-    };
-  });
+    const preparedItems = createOrderDto.items.map((item) => {
+      const menuItem = menuItemMap.get(item.menuItemId);
 
-  const result = await this.dataSource.transaction(async (manager) => {
+      if (!menuItem) {
+        throw new NotFoundException(
+          `Menu item with ID ${item.menuItemId} not found`,
+        );
+      }
 
-    const orderRepository = manager.getRepository(Order);
-    const orderItemRepository = manager.getRepository(OrderItem);
+      const itemPrice = Number(menuItem.price);
+      const lineTotal = itemPrice * item.quantity;
 
-    const order = orderRepository.create({
-      orderNumber: this.generateOrderNumber(),
-      userId: user.id,
-      customerName: user.fullName,
-      customerEmail: user.email,
-      deliveryAddress: createOrderDto.deliveryAddress?.trim() || user.address,
-      subtotal: subtotal.toFixed(2),
-      total: subtotal.toFixed(2),
-      placedAt: new Date(),
+      subtotal += lineTotal;
+
+      return {
+        menuItemId: menuItem.id,
+        itemName: menuItem.name,
+        itemPrice: itemPrice.toFixed(2),
+        quantity: item.quantity,
+        lineTotal: lineTotal.toFixed(2),
+      };
     });
 
-    const savedOrder = await orderRepository.save(order);
+    const result = await this.dataSource.transaction(async (manager) => {
+      const orderRepository = manager.getRepository(Order);
+      const orderItemRepository = manager.getRepository(OrderItem);
 
-    const orderItems = preparedItems.map((item) =>
-      orderItemRepository.create({
-        orderId: savedOrder.id,
-        menuItemId: item.menuItemId,
-        itemName: item.itemName,
-        itemPrice: item.itemPrice,
-        quantity: item.quantity,
-        lineTotal: item.lineTotal,
-      }),
-    );
+      const order = orderRepository.create({
+        orderNumber: this.generateOrderNumber(),
+        userId: user.id,
+        customerName: user.fullName,
+        customerEmail: user.email,
+        deliveryAddress: createOrderDto.deliveryAddress?.trim() || user.address,
+        subtotal: subtotal.toFixed(2),
+        total: subtotal.toFixed(2),
+        placedAt: new Date(),
+      });
 
-    await orderItemRepository.save(orderItems);
+      const savedOrder = await orderRepository.save(order);
 
-    return savedOrder.id;
-  });
+      const orderItems = preparedItems.map((item) =>
+        orderItemRepository.create({
+          orderId: savedOrder.id,
+          menuItemId: item.menuItemId,
+          itemName: item.itemName,
+          itemPrice: item.itemPrice,
+          quantity: item.quantity,
+          lineTotal: item.lineTotal,
+        }),
+      );
 
-  return {
-    id: result,
-    message: 'Order created successfully',
-  };
-}
+      await orderItemRepository.save(orderItems);
+
+      return savedOrder.id;
+    });
+
+    return {
+      id: result,
+      message: 'Order created successfully',
+    };
+  }
 
   async findMyOrders(userId: string): Promise<Order[]> {
     return this.ordersRepository.find({
@@ -141,58 +142,59 @@ export class OrdersService {
   }
 
   async findAll() {
-  return this.ordersRepository
-    .createQueryBuilder('order')
-    .select([
-      'order.id',
-      'order.createdAt',
-      'order.customerName',
-      'order.total',
-      'order.status',
-    ])
-    .orderBy('order.createdAt', 'DESC')
-    .getMany();
-}
-
-  async findOne(id: string) {
-  const order = await this.ordersRepository.findOne({
-    where: { id },
-    relations: ['items'],
-    select: {
-      id: true,
-      deliveryAddress: true,
-      total: true,
-      items: {
-        itemName: true,
-        quantity: true,
-        lineTotal: true,
-      },
-    },
-  });
-
-  if (!order) {
-    throw new NotFoundException('Order not found');
+    return this.ordersRepository
+      .createQueryBuilder('order')
+      .select([
+        'order.id',
+        'order.createdAt',
+        'order.customerName',
+        'order.total',
+        'order.status',
+      ])
+      .orderBy('order.createdAt', 'DESC')
+      .getMany();
   }
 
-  return order;
-}
+  async findOne(id: string) {
+    const order = await this.ordersRepository.findOne({
+      where: { id },
+      relations: ['items'],
+      select: {
+        id: true,
+        deliveryAddress: true,
+        total: true,
+        items: {
+          itemName: true,
+          quantity: true,
+          lineTotal: true,
+        },
+      },
+    });
+
+    if (!order) {
+      throw new NotFoundException('Order not found');
+    }
+
+    return order;
+  }
 
   async updateStatus(
-  id: string,
-  updateOrderStatusDto: UpdateOrderStatusDto,
-): Promise<{ id: string; message: string }> {
+    id: string,
+    updateOrderStatusDto: UpdateOrderStatusDto,
+  ): Promise<{ id: string; message: string }> {
+    const result = await this.ordersRepository.update(id, {
+      status: updateOrderStatusDto.status,
+    });
 
-  const order = await this.findOne(id);
+    if (!result.affected) {
+      throw new NotFoundException('Order not found');
+    }
 
-  order.status = updateOrderStatusDto.status;
-
-  await this.ordersRepository.save(order);
-
-  return {
-    id: order.id,
-    message: 'Order status updated successfully',
-  };
-}
+    return {
+      id,
+      message: 'Order status updated successfully',
+    };
+  }
 
   private generateOrderNumber(): string {
     const timestamp = Date.now();
