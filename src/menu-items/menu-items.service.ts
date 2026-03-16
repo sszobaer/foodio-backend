@@ -1,4 +1,5 @@
 import {
+  BadRequestException,
   ConflictException,
   Injectable,
   NotFoundException,
@@ -8,6 +9,7 @@ import { Repository, SelectQueryBuilder } from 'typeorm';
 
 import { MenuItem } from './entities/menu-item.entity';
 import { Category } from '../categories/entities/category.entity';
+import { OrderItem } from 'src/orders/entities/order-item.entity';
 import { CreateMenuItemDto } from './dto/create-menu-item.dto';
 import { UpdateMenuItemDto } from './dto/update-menu-item.dto';
 import { QueryMenuItemDto } from './dto/query-menu-item.dto';
@@ -23,8 +25,11 @@ export class MenuItemsService {
     @InjectRepository(Category)
     private readonly categoriesRepository: Repository<Category>,
 
+    @InjectRepository(OrderItem)
+    private readonly orderItemsRepository: Repository<OrderItem>,
+
     private readonly cloudinaryService: CloudinaryService,
-  ) { }
+  ) {}
 
   async create(
     createMenuItemDto: CreateMenuItemDto,
@@ -209,16 +214,11 @@ export class MenuItemsService {
     if (image) {
       menuItem.imageUrl = await this.cloudinaryService.uploadImage(image);
     }
-    
+
     await this.menuItemsRepository.save(menuItem);
 
-    const updatedMenuItem = await this.menuItemsRepository.findOne({
-      where: { id: menuItem.id },
-      relations: ['category'],
-    });
-
     return {
-      id: updatedMenuItem!.id,
+      id: menuItem.id,
       message: 'Menu item updated successfully',
     };
   }
@@ -240,9 +240,23 @@ export class MenuItemsService {
   }
 
   async remove(id: string): Promise<{ id: string; message: string }> {
-    const menuItem = await this.findOne(id);
+    await this.findOne(id);
 
-    await this.menuItemsRepository.remove(menuItem);
+    const orderItemCount = await this.orderItemsRepository.count({
+      where: {
+        menuItem: {
+          id,
+        },
+      },
+    });
+
+    if (orderItemCount > 0) {
+      throw new BadRequestException(
+        'Cannot delete menu item because it is used in existing orders.',
+      );
+    }
+
+    await this.menuItemsRepository.delete(id);
 
     return {
       id,
